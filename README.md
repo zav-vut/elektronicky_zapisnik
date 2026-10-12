@@ -1,3 +1,20 @@
+# Udělat nějáký rámec a potom to rozšiřovat
+- CRUD Luky
+- Menu Šimon
+- Persistence Luky
+
+---
+
+- Access throught password, encryption of persistent file Luky
+- Search engine, by tag, date regex name. Šimon
+- Dynamic Menu throught Arrows Šimon
+- Color the menu Šimon
+
+
+
+
+# AI shit
+
 | Component | Partner | Mandatory Responsibilities | Key Files |
 | :--- | :--- | :--- | :--- |
 | **User Interface** | **Šimon** | • Dynamic vector menu navigation<br>• Interactive ANSI arrow-key selection<br>• Note display, pagination & formatting<br>• User input validation & search UI | `main.c`, `ui.c`, `ui.h` |
