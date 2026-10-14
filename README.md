@@ -14,6 +14,27 @@ režim).
 - Vykresleni dynamickeho menu,
 - Ukladani do souboru a mechanicka prace jako backend.
 
+# Features
+## Šimon
+- Vytvoreni poznamky kde bude datum kdy to splnit, Hlavicka a samotny text, je hotovy?
+- Vypsani poznamky
+- Upraveni poznamky
+- Smazani poznamky
+- Zapisovat poznamky do csv souboru
+
+## Lukáš
+- Dynamicke menu 1
+> V loopu vypsat vsechny nasledujci ukoly
+> Vytvoreni poznamky
+> Zmena Datumu
+> Vypsani do Kalendare
+- Po kliknuti na poznamku se objevi dalsi menu
+> Oznacit jako splneno
+> Zobrazit poznamku
+> Editovat poznamku
+> Smazat poznamku
+
+
 
 ---
 
