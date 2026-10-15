@@ -5,8 +5,8 @@
 2. Úkoly označitelné jako hotové, možnost nastavení priority.
 3. Možnost kopírování či přesouvání úkolů mezi daty.
 Bonusový úkol: Implementujte vykreslení jednotlivých událostí v kalendáři (denní/týdenní
-režim).
-4. 
+režim)
+
 # Features
 ## Šimon
 - Vytvoreni poznamky kde bude datum kdy to splnit, Hlavicka a samotny text, je hotovy?
