@@ -6,14 +6,7 @@
 3. Možnost kopírování či přesouvání úkolů mezi daty.
 Bonusový úkol: Implementujte vykreslení jednotlivých událostí v kalendáři (denní/týdenní
 režim).
-
-- CRUDM(Move)
-- Menu 
-- Persistence
-
-- Vykresleni dynamickeho menu,
-- Ukladani do souboru a mechanicka prace jako backend.
-
+4. 
 # Features
 ## Šimon
 - Vytvoreni poznamky kde bude datum kdy to splnit, Hlavicka a samotny text, je hotovy?
@@ -23,17 +16,18 @@ režim).
 - Zapisovat poznamky do csv souboru
 
 ## Lukáš
-- Dynamicke menu 1
-> V loopu vypsat vsechny nasledujci ukoly
-> Vytvoreni poznamky
-> Zmena Datumu
-> Vypsani do Kalendare
+- Dynamicke menu
+  - V loopu vypsat vsechny nasledujci ukoly
+  - Vytvoreni poznamky
+   - Zmena Datumu
+   - Vypsani do Kalendare
 - Po kliknuti na poznamku se objevi dalsi menu
-> Oznacit jako splneno
-> Zobrazit poznamku
-> Editovat poznamku
-> Smazat poznamku
-
+  - Oznacit jako splneno
+  - Zobrazit poznamku
+  - Editovat poznamku
+  - Smazat poznamku
+- Zoprazení poznámek v kalendáři
+- Načítáni dat z csv
 
 
 ---
@@ -46,32 +40,13 @@ režim).
 ---
 
 ## 🛠️ Data Structure Overview
-
-Defined in `notebook.h`:
-
 ```c
 typedef struct {
     int id;
-    char title[100];
-    char category[30];
-    char date[20];
-    char *content;
+    char title[MAX_TITLE];
+    char text[MAX_TEXT];
+    int completed; // 0 - uncompleted, 1 = completed
+    char complate_date[11]; // YYYY-MM-DD
 } Note;
 
-typedef struct {
-    Note *notes;
-    int count;
-    int capacity;
-} Notebook;
-
-// Dynamic Menu Item Structure
-typedef struct {
-    char label[50];
-    void (*action)(Notebook *);
-} MenuItem;
-
-typedef struct {
-    MenuItem *items;
-    int count;
-    int selected_index;
-} DynamicMenu;
+```
