@@ -1,8 +1,0 @@
-//
-// Created by lucas on 10/15/26.
-//
-
-#ifndef ELEKTRONICKY_ZAPISNIK_UI_H
-#define ELEKTRONICKY_ZAPISNIK_UI_H
-
-#endif //ELEKTRONICKY_ZAPISNIK_UI_H
