@@ -7,6 +7,7 @@
 #define MAX_TEXT 300
 #define CSV_PATH "../data/notebook.csv"
 
+// l - vytvoření datové struktury pro poznámku
 typedef struct {
     int id;
     char title[MAX_TITLE];
@@ -23,6 +24,7 @@ void printNoteOptions();
 int chooseNoteOptions(char choice, int id);
 Note *getNote(int pid);
 
+// Hlavní runtime aplikace
 int main() {
     char input = ' ';
     while (true) {
@@ -40,6 +42,7 @@ int main() {
         }
     }
 }
+// l - vypsání menu a požádání o vstup
 void defaultMenu(char *input) {
     cls();
     printf("\n----- Menu -----\n");
@@ -51,13 +54,16 @@ void defaultMenu(char *input) {
     printf("Enter character from menu without brackets: ");
     scanf(" %c", input);
 }
+// l - čtení celého CSV souboru a vracení pointeru na list struktur
+// potřeba uvlonění pointeru to zavolání funkce free(fp)
 Note *readCSV(int *out_count) {
     FILE *fp = fopen(CSV_PATH, "r");
 
-    // If the file does not exist, create it with a header line and return NULL
+    // check jestli nemohu precist CSV
     if (fp == NULL) {
         printf("Can't open file. Creating new empty CSV.\n");
         fp = fopen(CSV_PATH, "w");
+        // pokud neni vytvoreny soubor, vytvoriho a prida k nemu hlavicku
         if (fp != NULL) {
             fprintf(fp, "id|title|content|completed|due_date\n");
             fclose(fp);
@@ -66,6 +72,7 @@ Note *readCSV(int *out_count) {
         return NULL;
     }
 
+    // nastavy zakladni kapacitu na 5 poznamek a nesledne pokud nestaci kapacita tak se 2x zvetsi
     int capacity = 5;
     int count = 0; // Track total valid records loaded (0-indexed)
 
@@ -78,27 +85,27 @@ Note *readCSV(int *out_count) {
 
     char buffer[1024];
 
-    // Skip header line (Line 1)
+    // preskocit 1. radek (header)
     fgets(buffer, sizeof(buffer), fp);
 
     while (fgets(buffer, sizeof(buffer), fp) != NULL) {
-        // Remove trailing newline character (\n or \r\n)
+        // odstraneni znaku \n pro novy radek a \r
         buffer[strcspn(buffer, "\r\n")] = 0;
 
-        // Skip empty lines
+        // preskoceni prazdnych radku
         if (buffer[0] == '\0') continue;
 
-        // Tokenize columns using '|' delimiter
+        // rozdelit do pole pomoci delimetru |
         char *id = strtok(buffer, "|");
         char *title = strtok(NULL, "|");
         char *content = strtok(NULL, "|");
         char *completed = strtok(NULL, "|");
         char *complate_date = strtok(NULL, "|");
 
-        // Ensure all required fields exist before saving
+        // ujisteni ze v kazdem poli neco je
         if (id && title && content && completed && complate_date) {
 
-            // Expand dynamic array when full
+            // rozsireni dynamicke pameti kdyz nestaci
             if (count >= capacity) {
                 capacity *= 2;
                 Note *tmp = (Note *) realloc(ptr, capacity * sizeof(Note));
@@ -111,7 +118,7 @@ Note *readCSV(int *out_count) {
                 ptr = tmp;
             }
 
-            // Write values to the struct array at index 'count'
+            // prirazeni hodnot z lokalich promenych do struktury dynamicke pameti
             ptr[count].id = atoi(id);
 
             strncpy(ptr[count].title, title, sizeof(ptr[count].title) - 1);
@@ -122,21 +129,24 @@ Note *readCSV(int *out_count) {
 
             ptr[count].completed = (atoi(completed) != 0);
 
-            count++; // Increment count for the next valid item
+            count++; // pocitani kolik poznamek tam je
         }
     }
 
     fclose(fp);
 
-    // Pass total count back to the caller if requested
+    // predani poctu poznamemek pokud uzivatel preda pointer na out_count
     if (out_count) {
         *out_count = count;
     }
 
     return ptr;
 }
+// l - vypisovani poznamek
+// vybrani poznamky a nasledne reseni akce pro urcitou poznamku
 int handleList() {
     int optionChoice = 2;
+    // pouzivam zde loop proto kdyz chci jit zpatky s volbou back tak abych se objevil v menu souboru
     while (optionChoice == 2) {
         int out_count = 0;
         Note *ptr =readCSV(&out_count);
@@ -146,6 +156,7 @@ int handleList() {
             exit(1);
         }
         cls();
+        // Vypsani poznamek z CSV
         printf("\n| %-5s | %-20s | %-10s | %-1s\n", "id", "title", "due_date", "completed");
         printf("--------------------------------------------------------\n");
         // Verify all 4 expected fields were found before printing
@@ -157,12 +168,15 @@ int handleList() {
         char input[5];
         int choice;
         char inputN = ' ';
-
         printf("\n");
+
+        // cekani na vybrani poznamky
         while (fgets(input, sizeof(input), stdin)) {
+            // pokud uzivatel zada b pro back tak se vrati do nabidky default menu
             if (input[0] == 'b' && (input[1] == '\n' || input[1] == '\0')) {
                 return 0;
             }
+            // nacitam id
             if (sscanf(input, "%d", &choice) == 1) {
                 break;
             }else {
@@ -170,8 +184,10 @@ int handleList() {
 
             }
         }
-                // Note options
+        // vypsani nabidky pro akce
         printNoteOptions();
+        // cekani na uzivatelovu volbu akce
+        // kdyz 2 tak se vrati do nabidky poznamek
         do {
             printf("Enter action: ");
             scanf(" %c", &inputN);
@@ -179,6 +195,7 @@ int handleList() {
         }while (chooseNoteOptions == 0);
     }
 }
+// l - vycisteni obrazovky
 void cls() {
     #ifdef _WIN32
         system("cls");
@@ -186,6 +203,7 @@ void cls() {
         system("clear");
     #endif
 }
+// l - vypsani nabidky pro jednotlivou poznamku
 void printNoteOptions() {
     cls();
     printf("Read[r]\n");
@@ -194,6 +212,7 @@ void printNoteOptions() {
     printf("Back[b]\n");
     printf("Exit[e]\n\n");
 }
+// l - handler pro akce se souborem
 int chooseNoteOptions(char choice, int id) {
     switch (choice) {
         case 'r': {
@@ -220,7 +239,9 @@ int chooseNoteOptions(char choice, int id) {
     }
     return 1;
 }
+// l - vraci hodnotu jedne poznamky vybranou pomoci id(pid)
 Note *getNote(int pid) {
+    // vytvorim pointer na strukturu
     Note *ptr = (Note *) malloc(sizeof(Note));
     if (ptr == NULL) {
         printf("Not enough memory\n");
@@ -238,12 +259,16 @@ Note *getNote(int pid) {
     while (fgets(buffer, sizeof(buffer), fp)) {
         buffer[strcspn(buffer, "\r\n")] = 0;
         char *id = strtok(buffer, "|");
-// skip if id not matched the passed
+
+        // pokud poznamka id neni stejna jako parametr tak preskoci iteraci na dalsi radek
         if (atoi(id) != pid) continue;
+        // ziskal jsem poznamku a ted jsi ulozim do docasnych promenych
         char *title = strtok(NULL, "|");
         char *content = strtok(NULL, "|");
         char *completed = strtok(NULL, "|");
         char *compleate_date = strtok(NULL, "|");
+
+        // ulozim z dosasnych promenych do struktury a pointer vratim
         ptr->id = atoi(id);
 
         strncpy(ptr->title, title, sizeof(ptr->title) - 1);
@@ -256,6 +281,7 @@ Note *getNote(int pid) {
         ptr->text[sizeof(ptr->text) - 1] = '\0';
 
         ptr->completed = (atoi(completed) != 0);
+        return ptr;
     }
-    return ptr;
+    return nullptr;
 }

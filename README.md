@@ -50,3 +50,7 @@ typedef struct {
 } Note;
 
 ```
+
+# TODO
+- handle edge cases
+- 
