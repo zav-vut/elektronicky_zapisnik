@@ -307,17 +307,56 @@ void showCalendar() {
 
     printf("Mon Tue Wed Thu Fri Sat Sun\n");
 
+    int out_count = 0;
+    Note *notes = readCSV(&out_count);
+
     // Vytisknout padding
     for (int i=0; i < firstDay; i++) {
         printf("    ");
     }
     for (int i=1; i <= daysInMonth; i++) {
-        printf("%3d ", i);
+        char currentDate[11];
+        sprintf(currentDate, "%04d-%02d-%02d", year, month, i);
+        int hasNote = 0;
+        for (int j=0; j < out_count; j++) {
+            if (strcmp(notes[j].complate_date, currentDate) == 0) {
+                hasNote = 1;
+                break;
+            }
+        }
+        if (hasNote) {
+            printf("%3d*", i);
+        }else {
+            printf("%3d ", i);
+        }
         dayPos++;
         if (dayPos % 7 == 0) printf("\n");
     }
     printf("\n\n");
+
+    char currentMonthPrefix[8];
+    sprintf(currentMonthPrefix, "%04d-%02d", year, month);
+
+    printf("---------- Notes ----------\n");
+    printf(" id    Date      Title\n");
+    for (int i=0; i < out_count; i++) {
+        if (strncmp(notes[i].complate_date, currentMonthPrefix, 7) == 0) {
+            printf("[%d] %s - %s\n", notes[i].id, notes[i].complate_date, notes[i].title);
+        }
+    }
+    // uvolnit dynamickou pamet
+    free(notes);
+
+    // vycistit buffer
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+
+    // pockat na interakci uzivatele
+    printf("\nPress enter to go back...");
+    getchar();
+
 }
+
 // https://en.wikipedia.org/wiki/Zeller%27s_congruence
 int firstDayOfWeek(int month, int year) {
     int q = 1; // q
