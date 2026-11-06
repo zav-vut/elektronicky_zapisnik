@@ -1,7 +1,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <stdlib.h>
+#include <ctime>
 
 #define MAX_TITLE 50
 #define MAX_TEXT 300
@@ -23,6 +23,8 @@ void cls();
 void printNoteOptions();
 int chooseNoteOptions(char choice, int id);
 Note *getNote(int pid);
+void showCalendar();
+int firstDayOfWeek(int month, int year);
 
 // Hlavní runtime aplikace
 int main() {
@@ -33,6 +35,7 @@ int main() {
             case 'a':
                 break;
             case 'c':
+                showCalendar();
                 break;
             case 'l':
                 handleList();
@@ -284,4 +287,32 @@ Note *getNote(int pid) {
         return ptr;
     }
     return nullptr;
+}
+void showCalendar() {
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    int firstDay = firstDayOfWeek(t->tm_mon + 1, t->tm_year + 1900);
+    printf("First day: %d", firstDay);
+}
+int firstDayOfWeek(int month, int year) {
+    int q = 1; // q
+
+    int K = year % 100;
+    int J = year / 100;
+    int n = 7;
+
+    // Leden a unor jsou pocitane jako 13 a 14 predchoziho roku
+    if (month == 1 || month == 2) {
+        month += 12;
+        year--;
+    }
+    int h = ((q + (13*(month+1)/5) + K + (K/4) + (J/4) -2*J)) % n;
+
+    // pokud modulo vyjde zaporne tak prictu 7 a preklopim do pozitivnich cisel
+    if (h < 0) h += n;
+
+    // set first day to Monday ;when monday h=1
+    h = ((h + 5) % 7) + 1;
+
+    return h;
 }
