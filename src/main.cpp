@@ -25,6 +25,7 @@ int chooseNoteOptions(char choice, int id);
 Note *getNote(int pid);
 void showCalendar();
 int firstDayOfWeek(int month, int year);
+int getDaysInMonth(int month, int year);
 
 // Hlavní runtime aplikace
 int main() {
@@ -289,30 +290,62 @@ Note *getNote(int pid) {
     return nullptr;
 }
 void showCalendar() {
+    cls();
     time_t now = time(NULL);
     struct tm *t = localtime(&now);
-    int firstDay = firstDayOfWeek(t->tm_mon + 1, t->tm_year + 1900);
-    printf("First day: %d", firstDay);
+    int month = t->tm_mon + 1;
+    int year = t->tm_year + 1900;
+    int firstDay = firstDayOfWeek(month, year);
+    int daysInMonth = getDaysInMonth(month,  year);
+    int dayPos = firstDay;
+
+    // Centrovani hlavicky
+    char headerBuffer[30];
+    int textLength = sprintf(headerBuffer, "%d / %d", month, year);
+    int padding = (27 - textLength) / 2;
+    printf("\n%*s%s\n", padding, "", headerBuffer);
+
+    printf("Mon Tue Wed Thu Fri Sat Sun\n");
+
+    // Vytisknout padding
+    for (int i=0; i < firstDay; i++) {
+        printf("    ");
+    }
+    for (int i=1; i <= daysInMonth; i++) {
+        printf("%3d ", i);
+        dayPos++;
+        if (dayPos % 7 == 0) printf("\n");
+    }
+    printf("\n\n");
 }
+// https://en.wikipedia.org/wiki/Zeller%27s_congruence
 int firstDayOfWeek(int month, int year) {
     int q = 1; // q
-
-    int K = year % 100;
-    int J = year / 100;
-    int n = 7;
 
     // Leden a unor jsou pocitane jako 13 a 14 predchoziho roku
     if (month == 1 || month == 2) {
         month += 12;
         year--;
     }
+    int K = year % 100;
+    int J = year / 100;
+    int n = 7;
+
     int h = ((q + (13*(month+1)/5) + K + (K/4) + (J/4) -2*J)) % n;
 
     // pokud modulo vyjde zaporne tak prictu 7 a preklopim do pozitivnich cisel
     if (h < 0) h += n;
 
     // set first day to Monday ;when monday h=1
-    h = ((h + 5) % 7) + 1;
+    h = ((h + 5) % 7);
 
     return h;
+}
+int getDaysInMonth(int month, int year) {
+    int daysInMonth[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+
+    if (month == 2) {
+        if ((year % 4 == 0) && (year % 100 != 0) || year % 400 == 0) daysInMonth[1] = 29;
+    }
+    return daysInMonth[month - 1];
 }
