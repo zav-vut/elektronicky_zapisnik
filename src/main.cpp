@@ -187,8 +187,24 @@ int handleList() {
             }
             // nacitam id
             if (sscanf(input, "%d", &choice) == 1) {
-                break;
+                Note* check = getNote(choice);
+                if (check != nullptr) {
+                    free(check);
+                    break;
+                }else {
+                    if (strchr(input, '\n') == NULL) {
+                        int c;
+                        while ((c = getchar()) != '\n' && c != EOF); // vyprázdní zbytek řádku
+                    }
+
+                    printf("Select note[id]/back[b]: ");
+                }
             }else {
+                if (strchr(input, '\n') == NULL) {
+                    int c;
+                    while ((c = getchar()) != '\n' && c != EOF); // vyprázdní zbytek řádku
+                }
+
                 printf("Select note[id]/back[b]: ");
 
             }
@@ -287,9 +303,9 @@ int chooseNoteOptions(char choice, int id) {
 // l - vraci hodnotu jedne poznamky vybranou pomoci id(pid)
 Note *getNote(int pid) {
     FILE *fp = fopen(CSV_PATH, "r");
-    if (fp == NULL) {
+    if (fp == nullptr) {
         printf("Subor sa nepodarilo otvorit.\n");
-        return NULL;
+        return nullptr;
     }
     char buffer[1024];
     // Preskočíme prvý riadok s hlavičkou
@@ -335,7 +351,7 @@ Note *getNote(int pid) {
     }
 
     fclose(fp);
-    return NULL; // Poznámka s daným ID sa v súbore nenašla
+    return nullptr; // Poznámka s daným ID sa v súbore nenašla
 }
 
 void showCalendar() {
@@ -403,6 +419,9 @@ void showCalendar() {
     // pockat na interakci uzivatele
     printf("\nPress enter to go back...");
     getchar();
+
+    // vycistit buffer
+    while ((c = getchar()) != '\n' && c != EOF);
 
 }
 
