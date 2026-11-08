@@ -13,7 +13,7 @@ typedef struct {
     char title[MAX_TITLE];
     char text[MAX_TEXT];
     bool completed; // 0 - uncompleted, 1 = completed
-    char complate_date[11]; // YYYY-MM-DD
+    char complete_date[11]; // YYYY-MM-DD
 } Note;
 
 void defaultMenu(char *input);
@@ -26,6 +26,10 @@ Note *getNote(int pid);
 void showCalendar();
 int firstDayOfWeek(int month, int year);
 int getDaysInMonth(int month, int year);
+void addNote();
+void showNoteDetail();
+void updateNote(int id);
+void deleteNote(int id);
 
 // Hlavní runtime aplikace
 int main() {
@@ -34,6 +38,7 @@ int main() {
         defaultMenu(&input);
         switch (input) {
             case 'a':
+                addNote();
                 break;
             case 'c':
                 showCalendar();
@@ -104,10 +109,10 @@ Note *readCSV(int *out_count) {
         char *title = strtok(NULL, "|");
         char *content = strtok(NULL, "|");
         char *completed = strtok(NULL, "|");
-        char *complate_date = strtok(NULL, "|");
+        char *complete_date = strtok(NULL, "|");
 
         // ujisteni ze v kazdem poli neco je
-        if (id && title && content && completed && complate_date) {
+        if (id && title && content && completed && complete_date) {
 
             // rozsireni dynamicke pameti kdyz nestaci
             if (count >= capacity) {
@@ -128,8 +133,8 @@ Note *readCSV(int *out_count) {
             strncpy(ptr[count].title, title, sizeof(ptr[count].title) - 1);
             ptr[count].title[sizeof(ptr[count].title) - 1] = '\0';
 
-            strncpy(ptr[count].complate_date, complate_date, sizeof(ptr[count].complate_date) - 1);
-            ptr[count].complate_date[sizeof(ptr[count].complate_date) - 1] = '\0';
+            strncpy(ptr[count].complete_date, complete_date, sizeof(ptr[count].complete_date) - 1);
+            ptr[count].complete_date[sizeof(ptr[count].complete_date) - 1] = '\0';
 
             ptr[count].completed = (atoi(completed) != 0);
 
@@ -165,7 +170,7 @@ int handleList() {
         printf("--------------------------------------------------------\n");
         // Verify all 4 expected fields were found before printing
         for (int i =0; i < out_count; i++) {
-            printf("| %-5d | %-20s | %-10s | %-1i\n", ptr[i].id, ptr[i].title, ptr[i].complate_date, ptr[i].completed);
+            printf("| %-5d | %-20s | %-10s | %-1i\n", ptr[i].id, ptr[i].title, ptr[i].complete_date, ptr[i].completed);
         }
         free(ptr);
 
@@ -199,6 +204,7 @@ int handleList() {
         }while (chooseNoteOptions == 0);
     }
 }
+
 // l - vycisteni obrazovky
 void cls() {
     #ifdef _WIN32
@@ -212,7 +218,7 @@ void printNoteOptions() {
     cls();
     printf("Read[r]\n");
     printf("Update[u]\n");
-    printf("Delete[r]\n");
+    printf("Delete[d]\n");
     printf("Back[b]\n");
     printf("Exit[e]\n\n");
 }
@@ -220,17 +226,51 @@ void printNoteOptions() {
 int chooseNoteOptions(char choice, int id) {
     switch (choice) {
         case 'r': {
-            printf("Read");
             Note *note = getNote(id);
-            printf("%d", note->id);
-            break;
+            if (note != NULL) {
+                printf("\n--- DETAIL POZNÁMKY ---\n");
+                printf("ID: %d\n", note->id);
+                printf("Nazov: %s\n", note->title);
+                printf("Text: %s\n", note->text);
+                printf("Datum vytvorenia: %s\n", note->complete_date);
+                
+                if (note->completed == 1) {
+                    printf("Stav: HOTOVO\n");
+                } else {
+                    printf("Stav: NESPLNENÉ\n");
+                }
+                
+                free(note);
+            } else {
+                printf("Poznámka s ID %d neexistuje\n", id);
+            }
+
+            // Vyčistenie vstupného buffera a počkanie na Enter
+            int c;
+            while ((c = getchar()) != '\n' && c != EOF);
+            printf("\nPress enter to go back...");
+            getchar();
+            return 2; // Návrat späť do zoznamu poznámok
         }
-        case 'u':
-            printf("Update");
-            break;
-        case 'd':
-            printf("Delete");
-            break;
+
+        case 'u': {
+            updateNote(id);
+            int c;
+            while ((c=getchar()) != '\n' && c!=EOF);
+            printf("\n Stlac Enter pre navrat");
+            getchar();
+            return 2;
+        }
+
+        case 'd': {
+            deleteNote(id);
+            int c;
+            while ((c=getchar()) != '\n' && c!=EOF);
+            printf("\n Stlac Enter pre navrat");
+            getchar();
+            return 2;
+        }
+
         case 'b':
             // printf("Back");
             return 2;
@@ -243,52 +283,61 @@ int chooseNoteOptions(char choice, int id) {
     }
     return 1;
 }
+
 // l - vraci hodnotu jedne poznamky vybranou pomoci id(pid)
 Note *getNote(int pid) {
-    // vytvorim pointer na strukturu
-    Note *ptr = (Note *) malloc(sizeof(Note));
-    if (ptr == NULL) {
-        printf("Not enough memory\n");
-        exit(1);
-    }
     FILE *fp = fopen(CSV_PATH, "r");
-
-    // If the file does not exist, create it with a header line and return NULL
     if (fp == NULL) {
-        printf("Can't open file.\n");
-        exit(1);
+        printf("Subor sa nepodarilo otvorit.\n");
+        return NULL;
     }
     char buffer[1024];
+    // Preskočíme prvý riadok s hlavičkou
     fgets(buffer, sizeof(buffer), fp);
-    while (fgets(buffer, sizeof(buffer), fp)) {
-        buffer[strcspn(buffer, "\r\n")] = 0;
-        char *id = strtok(buffer, "|");
 
-        // pokud poznamka id neni stejna jako parametr tak preskoci iteraci na dalsi radek
-        if (atoi(id) != pid) continue;
-        // ziskal jsem poznamku a ted jsi ulozim do docasnych promenych
+    while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+        // Odstránenie konca riadka
+        buffer[strcspn(buffer, "\r\n")] = 0;
+
+        // Rozdelenie riadka podľa zvislej čiary |
+        char *id = strtok(buffer, "|");
         char *title = strtok(NULL, "|");
         char *content = strtok(NULL, "|");
         char *completed = strtok(NULL, "|");
-        char *compleate_date = strtok(NULL, "|");
+        char *complete_date = strtok(NULL, "|");
 
-        // ulozim z dosasnych promenych do struktury a pointer vratim
-        ptr->id = atoi(id);
+        // Kontrola, či sa načítali všetky časti
+        if (id && title && content && completed && complete_date) {
+            if (atoi(id) == pid) {
+                // Našli sme hľadanú poznámku, vytvoríme pre ňu pamäť
+                Note *ptr = (Note *) malloc(sizeof(Note));
+                if (ptr == NULL) {
+                    fclose(fp);
+                    return NULL;
+                }
 
-        strncpy(ptr->title, title, sizeof(ptr->title) - 1);
-        ptr->title[sizeof(ptr->title) - 1] = '\0';
+                ptr->id = atoi(id);
+                strncpy(ptr->title, title, sizeof(ptr->title) - 1);
+                ptr->title[sizeof(ptr->title) - 1] = '\0';
 
-        strncpy(ptr->complate_date, compleate_date, sizeof(ptr->complate_date) - 1);
-        ptr->complate_date[sizeof(ptr->complate_date) - 1] = '\0';
+                strncpy(ptr->text, content, sizeof(ptr->text) - 1);
+                ptr->text[sizeof(ptr->text) - 1] = '\0';
 
-        strncpy(ptr->text, content, sizeof(ptr->text));
-        ptr->text[sizeof(ptr->text) - 1] = '\0';
+                strncpy(ptr->complete_date, complete_date, sizeof(ptr->complete_date) - 1);
+                ptr->complete_date[sizeof(ptr->complete_date) - 1] = '\0';
 
-        ptr->completed = (atoi(completed) != 0);
-        return ptr;
+                ptr->completed = (atoi(completed) != 0);
+
+                fclose(fp);
+                return ptr; // Úspešne vrátime nájdenú poznámku
+            }
+        }
     }
-    return nullptr;
+
+    fclose(fp);
+    return NULL; // Poznámka s daným ID sa v súbore nenašla
 }
+
 void showCalendar() {
     cls();
     time_t now = time(NULL);
@@ -319,7 +368,7 @@ void showCalendar() {
         sprintf(currentDate, "%04d-%02d-%02d", year, month, i);
         int hasNote = 0;
         for (int j=0; j < out_count; j++) {
-            if (strcmp(notes[j].complate_date, currentDate) == 0) {
+            if (strcmp(notes[j].complete_date, currentDate) == 0) {
                 hasNote = 1;
                 break;
             }
@@ -340,8 +389,8 @@ void showCalendar() {
     printf("---------- Notes ----------\n");
     printf(" id    Date      Title\n");
     for (int i=0; i < out_count; i++) {
-        if (strncmp(notes[i].complate_date, currentMonthPrefix, 7) == 0) {
-            printf("[%d] %s - %s\n", notes[i].id, notes[i].complate_date, notes[i].title);
+        if (strncmp(notes[i].complete_date, currentMonthPrefix, 7) == 0) {
+            printf("[%d] %s - %s\n", notes[i].id, notes[i].complete_date, notes[i].title);
         }
     }
     // uvolnit dynamickou pamet
@@ -387,4 +436,133 @@ int getDaysInMonth(int month, int year) {
         if ((year % 4 == 0) && (year % 100 != 0) || year % 400 == 0) daysInMonth[1] = 29;
     }
     return daysInMonth[month - 1];
+}
+
+void addNote(){
+    int id;
+    char title [100];
+    char text [300];
+    char date [20];
+
+    printf("\n ---NOVA POZNAMKA---\n");
+
+    printf("Zadaj ID poznamky (cislo): ");
+    scanf("%d",&id);
+
+    printf("Zadaj nazov poznamky: "); 
+    scanf(" %[^\n]s", title);
+
+    printf("Zadaj text poznamky: "); 
+    scanf(" %[^\n]s", text);
+
+    printf("Zadaj datum (YYYY-MM-DD): "); 
+    scanf("%s", date);
+
+    FILE *fp = fopen(CSV_PATH, "a");
+
+    if (fp != NULL) { 
+        fprintf(fp, "%d|%s|%s|0|%s\n", id, title, text, date); 
+        fclose(fp); 
+        printf("Poznamka bola uspesne ulozena!\n"); 
+    } 
+    else { 
+        printf("Chyba: Subor sa nedalo otvorit.\n"); 
+    } 
+}
+
+void updateNote(int id) { 
+    // 1. Skontrolujeme, či poznámka existuje 
+    Note *n = getNote(id); 
+    if (n == NULL) { 
+        printf("\nPoznamka s ID %d neexistuje!\n", id); 
+        return; 
+    } 
+    printf("\n--- UPRAVA POZNAMKY (ID: %d) ---\n", id); 
+
+    printf("Povodny nazov: %s\n", n->title); 
+    printf("Zadaj novy nazov: "); 
+    scanf(" %[^\n]", n->title); 
+
+    printf("Povodny text: %s\n", n->text); 
+    printf("Zadaj novy text: "); 
+    scanf(" %[^\n]", n->text); 
+
+    printf("Povodny datum (%s). Zadaj novy (YYYY-MM-DD): ", n->complete_date); 
+    scanf("%s", n->complete_date); 
+
+    int temp_status=0;
+    printf("Stav (1 = HOTOVO, 0 = NEHOTOVO). Zadaj novy stav: "); 
+    scanf("%d",&temp_status); 
+    n->completed=(temp_status !=0);
+    
+    // 2. Prepis v súbore pomocou temp.csv 
+    FILE *fp = fopen(CSV_PATH, "r"); 
+    FILE *temp = fopen("../data/temp.csv", "w"); 
+
+    if (fp == NULL || temp == NULL) { 
+        printf("Chyba pri otvarani suboru!\n"); 
+        if (fp) fclose(fp); 
+        if (temp) fclose(temp); 
+        free(n); 
+        return; 
+    } 
+    
+    char line[1024]; 
+    while (fgets(line, sizeof(line), fp)) { 
+        int current_id; 
+        if (sscanf(line, "%d|", &current_id) == 1 && current_id == id) { // Ak je to upravovaná poznámka, zapíšeme nové hodnoty 
+            fprintf(temp, "%d|%s|%s|%d|%s\n", n->id, n->title, n->text, n->completed, n->complete_date); 
+        } 
+        else { // Ostatné riadky skopírujeme bezo zmeny 
+            fputs(line, temp); 
+        } 
+    } 
+
+    fclose(fp); 
+    fclose(temp); // Nahradenie pôvodného súboru remove(CSV\_PATH); 
+
+    remove(CSV_PATH); 
+    rename("../data/temp.csv",CSV_PATH);
+
+    printf("\nPoznamka bola uspesne upravena!\n"); 
+    free(n);    
+}
+
+void deleteNote(int id){
+    FILE *fp=fopen(CSV_PATH,"r");
+    FILE *temp=fopen("../data/temp.csv","w");
+
+    if (fp==NULL || temp==NULL){
+        printf("Chyba pri otvrani suboru!\n");
+        if (fp) fclose(fp);
+        if (temp) fclose(temp);
+        return;
+    }
+
+    char line[1024];
+    int found=0;
+
+    while (fgets(line,sizeof(line),fp)){
+        int current_id;
+        if (sscanf(line,"%d|",&current_id)==1){
+            if (current_id==id){
+                found=1;
+                continue;
+            }
+        }
+        fputs(line,temp);
+    }
+    fclose(fp);
+    fclose(temp);
+
+    remove(CSV_PATH);
+    rename("../data/temp.csv",CSV_PATH);
+
+    if (found){
+        printf("\n Poznamka s ID %d bola zmazana!\n",id);
+    }
+
+    else{
+        printf("\nPoznamka s ID %d nebola najdena!",id);
+    }
 }
