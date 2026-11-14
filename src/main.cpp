@@ -30,6 +30,7 @@ void addNote();
 void showNoteDetail();
 void updateNote(int id);
 void deleteNote(int id);
+int getNextID();
 
 // Hlavní runtime aplikace
 int main() {
@@ -228,21 +229,21 @@ int chooseNoteOptions(char choice, int id) {
         case 'r': {
             Note *note = getNote(id);
             if (note != NULL) {
-                printf("\n--- DETAIL POZNÁMKY ---\n");
+                printf("\n--- NOTE DETAILS ---\n");
                 printf("ID: %d\n", note->id);
-                printf("Nazov: %s\n", note->title);
-                printf("Text: %s\n", note->text);
-                printf("Datum vytvorenia: %s\n", note->complete_date);
+                printf("Title: %s\n", note->title);
+                printf("Note: %s\n", note->text);
+                printf("Creation date: %s\n", note->complete_date);
                 
                 if (note->completed == 1) {
-                    printf("Stav: HOTOVO\n");
+                    printf("Progress: COMPLETED\n");
                 } else {
-                    printf("Stav: NESPLNENÉ\n");
+                    printf("Progress: INCOMPLETE\n");
                 }
                 
                 free(note);
             } else {
-                printf("Poznámka s ID %d neexistuje\n", id);
+                printf("Note [ID: %d] does not exist!\n", id);
             }
 
             // Vyčistenie vstupného buffera a počkanie na Enter
@@ -257,7 +258,7 @@ int chooseNoteOptions(char choice, int id) {
             updateNote(id);
             int c;
             while ((c=getchar()) != '\n' && c!=EOF);
-            printf("\n Stlac Enter pre navrat");
+            printf("\n Press Enter to return!");
             getchar();
             return 2;
         }
@@ -266,7 +267,7 @@ int chooseNoteOptions(char choice, int id) {
             deleteNote(id);
             int c;
             while ((c=getchar()) != '\n' && c!=EOF);
-            printf("\n Stlac Enter pre navrat");
+            printf("\n Press Enter to return!");
             getchar();
             return 2;
         }
@@ -288,7 +289,7 @@ int chooseNoteOptions(char choice, int id) {
 Note *getNote(int pid) {
     FILE *fp = fopen(CSV_PATH, "r");
     if (fp == NULL) {
-        printf("Subor sa nepodarilo otvorit.\n");
+        printf("Error: File could not be opened!\n");
         return NULL;
     }
     char buffer[1024];
@@ -438,24 +439,39 @@ int getDaysInMonth(int month, int year) {
     return daysInMonth[month - 1];
 }
 
+int getNextID(){
+    int out_count=0;
+    Note* notes=readCSV(&out_count);
+
+    if (notes==NULL || out_count==0){
+        if (notes!=NULL){
+            free(notes);
+        }
+        return 1;
+    }
+
+    int nextID=notes[out_count-1].id+1;
+
+    free(notes);
+    return nextID;
+}
+
 void addNote(){
-    int id;
+    int id=getNextID();
     char title [100];
     char text [300];
     char date [20];
 
-    printf("\n ---NOVA POZNAMKA---\n");
+    printf("\n ---NEW NOTE---\n");
+    printf("ID: %d\n",id);
 
-    printf("Zadaj ID poznamky (cislo): ");
-    scanf("%d",&id);
-
-    printf("Zadaj nazov poznamky: "); 
+    printf("Enter note title: "); 
     scanf(" %[^\n]s", title);
 
-    printf("Zadaj text poznamky: "); 
+    printf("Enter your note: "); 
     scanf(" %[^\n]s", text);
 
-    printf("Zadaj datum (YYYY-MM-DD): "); 
+    printf("Enter date (YYYY-MM-DD): "); 
     scanf("%s", date);
 
     FILE *fp = fopen(CSV_PATH, "a");
@@ -463,10 +479,10 @@ void addNote(){
     if (fp != NULL) { 
         fprintf(fp, "%d|%s|%s|0|%s\n", id, title, text, date); 
         fclose(fp); 
-        printf("Poznamka bola uspesne ulozena!\n"); 
+        printf("The note has been successfuly saved!\n"); 
     } 
     else { 
-        printf("Chyba: Subor sa nedalo otvorit.\n"); 
+        printf("Error: File could not be opened!\n"); 
     } 
 }
 
@@ -474,24 +490,24 @@ void updateNote(int id) {
     // 1. Skontrolujeme, či poznámka existuje 
     Note *n = getNote(id); 
     if (n == NULL) { 
-        printf("\nPoznamka s ID %d neexistuje!\n", id); 
+        printf("\nNote with ID: %d does not exist!\n", id); 
         return; 
     } 
-    printf("\n--- UPRAVA POZNAMKY (ID: %d) ---\n", id); 
+    printf("\n--- NOTE EDIT (ID: %d) ---\n", id); 
 
-    printf("Povodny nazov: %s\n", n->title); 
-    printf("Zadaj novy nazov: "); 
+    printf("Original title: %s\n", n->title); 
+    printf("Enter new title: "); 
     scanf(" %[^\n]", n->title); 
 
-    printf("Povodny text: %s\n", n->text); 
-    printf("Zadaj novy text: "); 
+    printf("Original text: %s\n", n->text); 
+    printf("Enter new text: "); 
     scanf(" %[^\n]", n->text); 
 
-    printf("Povodny datum (%s). Zadaj novy (YYYY-MM-DD): ", n->complete_date); 
+    printf("Original date: (%s). Enter new date (YYYY-MM-DD): ", n->complete_date); 
     scanf("%s", n->complete_date); 
 
     int temp_status=0;
-    printf("Stav (1 = HOTOVO, 0 = NEHOTOVO). Zadaj novy stav: "); 
+    printf("Progress (1 = Completed, 0 = Incomplete). Enter new progress: "); 
     scanf("%d",&temp_status); 
     n->completed=(temp_status !=0);
     
@@ -500,7 +516,7 @@ void updateNote(int id) {
     FILE *temp = fopen("../data/temp.csv", "w"); 
 
     if (fp == NULL || temp == NULL) { 
-        printf("Chyba pri otvarani suboru!\n"); 
+        printf("Error: The file could not be opened!\n"); 
         if (fp) fclose(fp); 
         if (temp) fclose(temp); 
         free(n); 
@@ -524,7 +540,7 @@ void updateNote(int id) {
     remove(CSV_PATH); 
     rename("../data/temp.csv",CSV_PATH);
 
-    printf("\nPoznamka bola uspesne upravena!\n"); 
+    printf("\nThe note has been updated!!\n"); 
     free(n);    
 }
 
@@ -533,7 +549,7 @@ void deleteNote(int id){
     FILE *temp=fopen("../data/temp.csv","w");
 
     if (fp==NULL || temp==NULL){
-        printf("Chyba pri otvrani suboru!\n");
+        printf("Error: The file could not be opened!\n");
         if (fp) fclose(fp);
         if (temp) fclose(temp);
         return;
@@ -559,10 +575,10 @@ void deleteNote(int id){
     rename("../data/temp.csv",CSV_PATH);
 
     if (found){
-        printf("\n Poznamka s ID %d bola zmazana!\n",id);
+        printf("\nNote [ID: %d] has been deleted!\n",id);
     }
 
     else{
-        printf("\nPoznamka s ID %d nebola najdena!",id);
+        printf("\nNote [ID: %d] has not been found!",id);
     }
 }
