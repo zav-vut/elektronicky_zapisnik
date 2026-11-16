@@ -31,6 +31,7 @@ void showNoteDetail();
 void updateNote(int id);
 void deleteNote(int id);
 int getNextID();
+bool isLeapYear(int year);
 
 // Hlavní runtime aplikace
 int main() {
@@ -430,11 +431,14 @@ int firstDayOfWeek(int month, int year) {
 
     return h;
 }
+bool isLeapYear(int year) {
+    return (year % 4 == 0) && (year % 100 != 0) || year % 400 == 0;
+}
 int getDaysInMonth(int month, int year) {
     int daysInMonth[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
     if (month == 2) {
-        if ((year % 4 == 0) && (year % 100 != 0) || year % 400 == 0) daysInMonth[1] = 29;
+        if (isLeapYear(year)) daysInMonth[1] = 29;
     }
     return daysInMonth[month - 1];
 }
