@@ -32,6 +32,7 @@ void updateNote(int id);
 void deleteNote(int id);
 int getNextID();
 bool isLeapYear(int year);
+int jePlatnyDatum(char text[]);
 
 // Hlavní runtime aplikace
 int main() {
@@ -460,6 +461,31 @@ int getNextID(){
     return nextID;
 }
 
+int jePlatnyDatum(char text[]){
+    int r;
+    int m;
+    int d;
+
+    if (sscanf(text,"%d-%d-%d",&r,&m,&d) != 3){
+        return 0;
+    }
+    
+    if (r<1000 || r>9999){
+        return 0;
+    }
+
+    if (m<1 || m>12){
+        return 0;
+    }
+
+    int maxDni=getDaysInMonth(m,r);
+
+    if (d<1 || d>maxDni){
+        return 0;
+    }
+    return 1;
+}
+
 void addNote(){
     int id=getNextID();
     char title [100];
@@ -475,8 +501,16 @@ void addNote(){
     printf("Enter your note: ");
     scanf(" %[^\n]s", text);
 
-    printf("Enter date (YYYY-MM-DD): ");
-    scanf("%s", date);
+    while (1){
+        printf("Enter date: (YYYY-MM-DD): ");
+        scanf("%s",date);
+
+        if (jePlatnyDatum(date)==1){
+            break;
+        }
+
+        printf("Incorrect date format! Year must be 4 digits long, month 2 digits long and date 2 digits long. (Example: 2026-11-2O).");
+    }
 
     FILE *fp = fopen(CSV_PATH, "a");
 
@@ -497,7 +531,7 @@ void updateNote(int id) {
         printf("\nNote with ID: %d does not exist!\n", id);
         return; 
     } 
-    printf("\n--- NOTE EDIT (ID: %d) ---\n", id);
+    printf("\n--- EDIT NOTE (ID: %d) ---\n", id);
 
     printf("Original title: %s\n", n->title);
     printf("Enter new title: ");
@@ -507,8 +541,15 @@ void updateNote(int id) {
     printf("Enter new text: ");
     scanf(" %[^\n]", n->text); 
 
-    printf("Original date: (%s). Enter new date (YYYY-MM-DD): ", n->complete_date);
-    scanf("%s", n->complete_date); 
+    while (1){
+        printf("Original date: (%s). Enter new date (YYYY-MM-DD): ", n->complete_date);
+        scanf("%s",n->complete_date);
+
+        if (jePlatnyDatum(n->complete_date)==1){
+            break;
+        }
+        printf("Incorrect date format! Year must be 4 digits long, month 2 digits long and date 2 digits long. (Example: 2026-11-2O).");
+    } 
 
     int temp_status=0;
     printf("Progress (1 = Completed, 0 = Incomplete). Enter new progress: ");
