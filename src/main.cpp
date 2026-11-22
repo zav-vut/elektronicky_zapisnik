@@ -32,7 +32,7 @@ void updateNote(int id);
 void deleteNote(int id);
 int getNextID();
 bool isLeapYear(int year);
-int jePlatnyDatum(char text[]);
+int isCorrectDate(char text[]);
 
 // Hlavní runtime aplikace
 int main() {
@@ -461,7 +461,7 @@ int getNextID(){
     return nextID;
 }
 
-int jePlatnyDatum(char text[]){
+int isCorrectDate(char text[]){
     int r;
     int m;
     int d;
@@ -505,7 +505,7 @@ void addNote(){
         printf("Enter date: (YYYY-MM-DD): ");
         scanf("%s",date);
 
-        if (jePlatnyDatum(date)==1){
+        if (isCorrectDate(date)==1){
             break;
         }
 
@@ -545,7 +545,7 @@ void updateNote(int id) {
         printf("Original date: (%s). Enter new date (YYYY-MM-DD): ", n->complete_date);
         scanf("%s",n->complete_date);
 
-        if (jePlatnyDatum(n->complete_date)==1){
+        if (isCorrectDate(n->complete_date)==1){
             break;
         }
         printf("Incorrect date format! Year must be 4 digits long, month 2 digits long and date 2 digits long. (Example: 2026-11-2O).");
