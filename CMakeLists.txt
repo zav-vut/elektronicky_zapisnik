@@ -4,5 +4,6 @@ project(elektronicky_zapisnik)
 set(CMAKE_CXX_STANDARD 20)
 
 add_executable(elektronicky_zapisnik src/main.cpp
-        src/storage.cpp
+        src/utils.cpp
+        src/utils.h
 )
