@@ -526,32 +526,75 @@ void updateNote(int id) {
         printf("\nNote [ID: %d] does not exist!\n", id);
         return; 
     } 
+
+    //stlacenim enteru preskocime policko co nechceme menit
     printf("\n--- EDIT NOTE (ID: %d) ---\n", id);
+    printf("(Press Enter to skip)\n\n");
 
-    printf("Original title: %s\n", n->title);
-    printf("Enter new title: ");
-    scanf(" %[^\n]", n->title); 
+    //musime vycistit buffer, inak sa po stalceni enteru rovno prejde na zmenu textu
+    int c;
+    while ((c=getchar()) != '\n' && c!=EOF);
 
-    printf("Original text: %s\n", n->text);
-    printf("Enter new text: ");
-    scanf(" %[^\n]", n->text); 
+    char new_title[100];
+    char new_text[500];
+    char new_date[20];
+
+    strcpy(new_title,n->title);
+    strcpy(new_text,n->text);
+    strcpy(new_date,n->complete_date);
+
+    printf("Title [%s]: ",n->title);
+    char input_title[100];
+
+    if (fgets(input_title,sizeof(input_title),stdin)){
+        if (input_title[0]!='\n'){
+            input_title[strcspn(input_title,"\r\n")]='\0';
+            strcpy(new_title,input_title);
+        }
+    }
+    
+    printf("Text [%s]: ",n->text);
+    char input_text[500];
+
+    if (fgets(input_text,sizeof(input_text),stdin)){
+        if (input_text[0]!='\n'){
+            input_text[strcspn(input_text,"\r\n")]='\0';
+            strcpy(new_text,input_text);
+        }
+    }
 
     //loop bezi pokial uzivael nezada spravny datum
     while (1){
-        printf("Original date: (%s). Enter new date (YYYY-MM-DD): ", n->complete_date);
-        scanf("%s",n->complete_date);
+        printf("Date (YYYY-MM-DD) [%s]: ", n->complete_date);
+        char input_date[50];
 
-        if (isCorrectDate(n->complete_date)==1){
+        if (fgets(input_date,sizeof(input_date),stdin)){
+        if (input_date[0]=='\n'){
             break;
         }
-        printf("Incorrect date format! Enter your date as YYYY-MM-DD (Example: 2026-11-2O).");
-    } 
+        input_date[strcspn(input_date,"\r\n")]='\0';
+        if (isCorrectDate(input_date)==1){
+            strcpy(new_date,input_date);
+            break;
+        }
+        printf("Incorrect date format! Enter your date as YYYY-MM-DD (Example: 2026-11-2O).\n");
+        } 
+    }
 
-    //ochrana ak by user nahodou zadal 2, hodnota sa stale zmeni na completed (pokial to neni 0)
-    int temp_status=0;
-    printf("Progress (1 = Completed, 0 = Incomplete). Enter new progress: ");
-    scanf("%d",&temp_status); 
-    n->completed=(temp_status !=0);
+    printf("Complete (1)/Incomplete(0) [%d]: ",n->completed);
+    char input_completed[10];
+    int new_completed=n->completed;
+
+    if (fgets(input_completed,sizeof(input_completed),stdin)){
+        if (input_completed[0]!='\n'){
+            new_completed=atoi(input_completed);
+        }
+    }
+
+    strcpy(n->title,new_title);
+    strcpy(n->text,new_text);
+    strcpy(n->complete_date,new_date);
+    n->completed=new_completed;
     
     //praca s temp suborom
     FILE *fp = fopen(CSV_PATH, "r"); 
@@ -583,8 +626,14 @@ void updateNote(int id) {
     remove(CSV_PATH); 
     rename("../data/temp.csv",CSV_PATH);
 
-    printf("\nThe note has been updated!!\n");
-    free(n);    
+    printf("\n--------------------------\n");
+    printf("\nThe note [ID:%d] has been updated!\n",id);
+    printf("Press Enter to go back\n");
+    
+    //musime zase vycistit buffer, inak sa userovi nevypise "Press Enter to go back" a nevedel by co robit
+    int d;
+    while ((d=getchar()) != '\n' && d != EOF);
+    free(n);
 }
 
 void deleteNote(int id){
