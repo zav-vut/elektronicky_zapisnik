@@ -178,6 +178,75 @@ Note *getNote(int pid) {
     fclose(fp);
     return NULL; // Poznámka s daným ID sa v súbore nenašla
 }
+
+void showCalendar() {
+    cls();
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    int month = t->tm_mon + 1;
+    int year = t->tm_year + 1900;
+    int firstDay = firstDayOfWeek(month, year);
+    int daysInMonth = getDaysInMonth(month,  year);
+    int dayPos = firstDay;
+
+    // Centrovani hlavicky
+    char headerBuffer[30];
+    int textLength = sprintf(headerBuffer, "%d / %d", month, year);
+    int padding = (27 - textLength) / 2;
+    printf("\n%*s%s\n", padding, "", headerBuffer);
+
+    printf("Mon Tue Wed Thu Fri Sat Sun\n");
+
+    int out_count = 0;
+    Note *notes = readCSV(&out_count);
+
+    // Vytisknout padding
+    for (int i=0; i < firstDay; i++) {
+        printf("    ");
+    }
+    for (int i=1; i <= daysInMonth; i++) {
+        char currentDate[11];
+        sprintf(currentDate, "%04d-%02d-%02d", year, month, i);
+        int hasNote = 0;
+        for (int j=0; j < out_count; j++) {
+            if (strcmp(notes[j].complete_date, currentDate) == 0) {
+                hasNote = 1;
+                break;
+            }
+        }
+        if (hasNote) {
+            printf("%3d*", i);
+        }else {
+            printf("%3d ", i);
+        }
+        dayPos++;
+        if (dayPos % 7 == 0) printf("\n");
+    }
+    printf("\n\n");
+
+    char currentMonthPrefix[8];
+    sprintf(currentMonthPrefix, "%04d-%02d", year, month);
+
+    printf("---------- Notes ----------\n");
+    printf(" id    Date      Title\n");
+    for (int i=0; i < out_count; i++) {
+        if (strncmp(notes[i].complete_date, currentMonthPrefix, 7) == 0) {
+            printf("[%d] %s - %s\n", notes[i].id, notes[i].complete_date, notes[i].title);
+        }
+    }
+    // uvolnit dynamickou pamet
+    free(notes);
+
+    // vycistit buffer
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+
+    // pockat na interakci uzivatele
+    printf("\nPress enter to go back...");
+    getchar();
+
+}
+
 // https://en.wikipedia.org/wiki/Zeller%27s_congruence
 int firstDayOfWeek(int month, int year) {
     int q = 1; // q
@@ -253,4 +322,208 @@ int isCorrectDate(char text[]){
         return 0;
     }
     return 1;
+}
+
+void addNote(){
+    int id=getNextID();
+    char title [100];
+    char text [300];
+    char date [20];
+
+    printf("\n ---NEW NOTE---\n");
+    printf("ID: %d\n",id);
+
+    printf("Enter note title: ");
+    scanf(" %[^\n]s", title);
+
+    printf("Enter your note: ");
+    scanf(" %[^\n]s", text);
+
+    while (1){
+        printf("Enter date: (YYYY-MM-DD): ");
+        scanf("%s",date);
+
+        if (isCorrectDate(date)==1){
+            break;
+        }
+
+        printf("Incorrect date format!");
+    }
+
+    FILE *fp = fopen(CSV_PATH, "a");
+
+    if (fp != NULL) { 
+        fprintf(fp, "%d|%s|%s|0|%s\n", id, title, text, date); 
+        fclose(fp); 
+        printf("The note has been successfuly saved!\n");
+    } 
+    else { 
+        printf("Error: File could not be opened!\n");
+    } 
+}
+
+void updateNote(int id) { 
+    Note *n = getNote(id); 
+    if (n == NULL) { 
+        printf("\nNote [ID: %d] does not exist!\n", id);
+        return; 
+    } 
+
+    //stlacenim enteru preskocime policko co nechceme menit
+    printf("\n--- EDIT NOTE (ID: %d) ---\n", id);
+    printf("(Press Enter to skip)\n\n");
+
+    //musime vycistit buffer, inak sa po stalceni enteru rovno prejde na zmenu textu
+    int c;
+    while ((c=getchar()) != '\n' && c!=EOF);
+
+    //pouzivam zachytne polia aby sme tie povodne nevymazali enterom
+    char new_title[100];
+    char new_text[500];
+    char new_date[20];
+
+    strcpy(new_title,n->title);
+    strcpy(new_text,n->text);
+    strcpy(new_date,n->complete_date);
+
+    printf("Title [%s]: ",n->title);
+    char input_title[100];
+
+    if (fgets(input_title,sizeof(input_title),stdin)){
+        if (input_title[0]!='\n'){
+            input_title[strcspn(input_title,"\r\n")]='\0';
+            strcpy(new_title,input_title);
+        }
+    }
+    
+    printf("Text [%s]: ",n->text);
+    char input_text[500];
+
+    if (fgets(input_text,sizeof(input_text),stdin)){
+        if (input_text[0]!='\n'){
+            input_text[strcspn(input_text,"\r\n")]='\0';
+            strcpy(new_text,input_text);
+        }
+    }
+
+    //loop bezi pokial uzivael nezada spravny datum
+    while (1){
+        printf("Date (YYYY-MM-DD) [%s]: ", n->complete_date);
+        char input_date[50];
+
+        if (fgets(input_date,sizeof(input_date),stdin)){
+        if (input_date[0]=='\n'){
+            break;
+        }
+        input_date[strcspn(input_date,"\r\n")]='\0';
+        if (isCorrectDate(input_date)==1){
+            strcpy(new_date,input_date);
+            break;
+        }
+        printf("Incorrect date format!\n");
+        } 
+    }
+
+    printf("Complete (1)/Incomplete(0) [%d]: ",n->completed);
+    char input_completed[10];
+    int new_completed=n->completed;
+
+    if (fgets(input_completed,sizeof(input_completed),stdin)){
+        if (input_completed[0]!='\n'){
+            new_completed=atoi(input_completed);
+        }
+    }
+
+    strcpy(n->title,new_title);
+    strcpy(n->text,new_text);
+    strcpy(n->complete_date,new_date);
+    n->completed=new_completed;
+    
+    //praca s temp suborom
+    FILE *fp = fopen(CSV_PATH, "r"); 
+    FILE *temp = fopen("../data/temp.csv", "w"); 
+
+    if (fp == NULL || temp == NULL) { 
+        printf("Error: The file could not be opened!\n");
+        if (fp) fclose(fp); 
+        if (temp) fclose(temp); 
+        free(n); 
+        return; 
+    } 
+    
+    //ak narazime na id poznamky, ktoru chceme editovat, zmeny zapiseme do temp, zvysne prekopirujeme bez zmeny
+    char line[1024]; 
+    while (fgets(line, sizeof(line), fp)) { 
+        int current_id; 
+        if (sscanf(line, "%d|", &current_id) == 1 && current_id == id) { 
+            fprintf(temp, "%d|%s|%s|%d|%s\n", n->id, n->title, n->text, n->completed, n->complete_date); 
+        } 
+        else { 
+            fputs(line, temp); 
+        } 
+    } 
+
+    fclose(fp); 
+    fclose(temp); 
+
+    remove(CSV_PATH); 
+    rename("../data/temp.csv",CSV_PATH);
+
+    printf("\n--------------------------\n");
+    printf("\nThe note [ID:%d] has been updated!\n",id);
+    free(n);
+}
+
+void deleteNote(int id){
+    //potvrdenie uzivatelom ci naozaj chce poznamku mazat
+    char confirm=' ';
+    printf("Do you really want to delete this note? (Press y to confirm, any key to cancel): ");
+    scanf(" %c",&confirm);
+
+    if (confirm != 'y' && confirm != 'Y'){
+        printf("Action cancelled.\n");
+        return;
+    }
+
+    //praca s twmp suborom
+    FILE *fp=fopen(CSV_PATH,"r");
+    FILE *temp=fopen("../data/temp.csv","w");
+
+    //ak nevieme nacitat oba, zatvorime ten ktory sa nacitst podarilo
+    if (fp==NULL || temp==NULL){
+        printf("Error: The file could not be opened!\n");
+        if (fp) fclose(fp);
+        if (temp) fclose(temp);
+        return;
+    }
+
+    char line[1024];
+    int found=0;
+
+    //ak anrazime na id poznakmy ktoru chceme vymazat, nezapiseme ju do temp suboru
+    while (fgets(line,sizeof(line),fp)){
+        int current_id;
+        if (sscanf(line,"%d|",&current_id)==1){
+            if (current_id==id){
+                found=1;
+                continue;
+            }
+        }
+        fputs(line,temp);
+    }
+    fclose(fp);
+    fclose(temp);
+
+    //mazeme povodny file a premenujeme novy temp
+    remove(CSV_PATH);
+    rename("../data/temp.csv",CSV_PATH);
+
+    if (found){
+        printf("\nNote [ID: %d] has been deleted!\n",id);
+    }
+
+    else{
+        printf("\nNote [ID: %d] has not been found!",id);
+    }
+
 }

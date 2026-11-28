@@ -5,7 +5,10 @@
 #ifndef ELEKTRONICKY_ZAPISNIK_UTILS_H
 #define ELEKTRONICKY_ZAPISNIK_UTILS_H
 
-#endif //ELEKTRONICKY_ZAPISNIK_UTILS_H
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
 
 #define MAX_TITLE 50
 #define MAX_TEXT 300
@@ -32,3 +35,7 @@ void showNoteDetail();
 int getNextID();
 bool isLeapYear(int year);
 int isCorrectDate(char text[]);
+void updateNote(int id);
+void deleteNote(int id);
+
+#endif
